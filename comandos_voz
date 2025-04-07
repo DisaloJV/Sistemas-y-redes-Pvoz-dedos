@@ -1,0 +1,52 @@
+# pip install SpeechRecognition
+
+# Linux:
+# sudo apt-get install python-pyaudio python3-pyaudio
+# MacOS:
+# brew install portaudio
+# pip install pyaudio
+# Windows:
+# pip install pyaudio
+
+from socketIO_client import SocketIO
+
+IP_SERVER = '192.168.100.161'
+print("Comenzando...")
+socketIO = SocketIO(IP_SERVER,3000)
+print("Conectando al servidor")
+
+
+import speech_recognition as sr
+
+print("Speech Recognition Version: "+sr.__version__)
+r = sr.Recognizer()
+# Micrófono por defecto
+mic = sr.Microphone()
+# Lista de micrófonos
+sr.Microphone.list_microphone_names()
+mic = sr.Microphone()
+
+matches_on = ["PRENDER", "ENCENDER", "SWITCH ON"]
+matches_off = ["APAGAR", "SWITCH OFF"]
+
+
+with mic as source:
+    print("Grabando...")
+    r.adjust_for_ambient_noise(source)
+    while True:
+        audio = r.listen(source)
+        print("Traduciendo...")
+        try:
+            text = r.recognize_google(audio)
+            text = text.upper()
+            print(text)
+            if any(x in text for x in matches_on): #any or all
+                print("Prendiendo")
+                socketIO.emit("desde_cliente","ON")
+            if any(x in text for x in matches_off): #any or all
+                print("apagando")
+                socketIO.emit("desde_cliente","OFF")
+        except sr.UnknownValueError:
+            print("Google Cloud Speech no pudo entener el audio")
+        except sr.RequestError as e:
+            print("No es posible consultar el servicio de Google Cloud Speech; {0}".format(e))
